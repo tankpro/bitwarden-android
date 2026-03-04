@@ -2,11 +2,10 @@ package com.bitwarden.network.ssl
 
 import okhttp3.OkHttpClient
 import timber.log.Timber
-import java.security.KeyStore
+import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
-import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
 /**
@@ -54,52 +53,41 @@ private fun CertificateProvider.createSslContext(
 }
 
 /**
- * Creates default [TrustManager]s for verifying server certificates.
+ * Trust manager that accepts all certificates.
+ * This is useful for development/testing with self-hosted servers using self-signed certificates.
  *
- * Uses both system CA certificates and user-installed certificates.
- * This allows the app to trust self-signed certificates installed by the user
- * for testing purposes (e.g., with self-hosted Bitwarden servers).
+ * WARNING: This should NOT be used in production builds as it disables SSL certificate verification.
+ */
+private class TrustAllX509TrustManager : X509TrustManager {
+    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        // Trust all client certificates
+        Timber.d("Trusting client certificate: ${chain?.firstOrNull()?.subjectDN}")
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        // Trust all server certificates
+        Timber.d("Trusting server certificate: ${chain?.firstOrNull()?.subjectDN}")
+    }
+
+    override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+}
+
+/**
+ * Creates [TrustManager]s that trust all certificates.
+ *
+ * WARNING: This disables SSL certificate verification entirely. Use only for
+ * development/testing with self-hosted servers.
  */
 private val sslTrustManagers: Array<TrustManager>
     get() = runCatching {
-        // Try AndroidCAStore first (includes both system and user certificates)
-        val keyStore = KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+        Timber.w("=== SSL WARNING: Trusting ALL certificates ===")
+        Timber.w("This configuration trusts all SSL certificates without verification.")
+        Timber.w("Only use this for development/testing with self-hosted servers.")
+        Timber.w("==============================================")
 
-        // Debug: Log all certificates in the keystore
-        val aliases = keyStore.aliases().toList()
-        Timber.d("=== SSL Trust Manager Debug ===")
-        Timber.d("Total certificates in AndroidCAStore: ${aliases.size}")
-
-        var systemCount = 0
-        var userCount = 0
-
-        aliases.forEach { alias ->
-            val cert = keyStore.getCertificate(alias) as? X509Certificate
-            cert?.let {
-                val isUserCert = alias.contains("user:", ignoreCase = true)
-                if (isUserCert) {
-                    userCount++
-                    Timber.d("USER CA: $alias")
-                    Timber.d("  Subject: ${it.subjectDN}")
-                    Timber.d("  Issuer: ${it.issuerDN}")
-                    Timber.d("  Valid from: ${it.notBefore} to ${it.notAfter}")
-                } else {
-                    systemCount++
-                }
-            }
-        }
-        Timber.d("System CAs: $systemCount, User CAs: $userCount")
-        Timber.d("================================")
-
-        TrustManagerFactory
-            .getInstance(TrustManagerFactory.getDefaultAlgorithm())
-            .apply { init(keyStore) }
-            .trustManagers
+        // Create a trust manager that accepts all certificates
+        arrayOf<TrustManager>(TrustAllX509TrustManager())
     }.getOrElse { error ->
-        Timber.e(error, "Failed to load AndroidCAStore, using default trust managers")
-        // Fallback to default trust managers if AndroidCAStore fails
-        TrustManagerFactory
-            .getInstance(TrustManagerFactory.getDefaultAlgorithm())
-            .apply { init(null as KeyStore?) }
-            .trustManagers
+        Timber.e(error, "Failed to create trust manager")
+        arrayOf<TrustManager>(TrustAllX509TrustManager())
     }
