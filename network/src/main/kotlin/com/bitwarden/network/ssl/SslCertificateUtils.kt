@@ -59,11 +59,17 @@ private fun CertificateProvider.createSslContext(
  * for testing purposes (e.g., with self-hosted Bitwarden servers).
  */
 private val sslTrustManagers: Array<TrustManager>
-    get() {
-        // Load AndroidCAStore which includes both system and user certificates
+    get() = runCatching {
+        // Try AndroidCAStore first (includes both system and user certificates)
         val keyStore = KeyStore.getInstance("AndroidCAStore").apply { load(null) }
-        return TrustManagerFactory
+        TrustManagerFactory
             .getInstance(TrustManagerFactory.getDefaultAlgorithm())
             .apply { init(keyStore) }
+            .trustManagers
+    }.getOrElse {
+        // Fallback to default trust managers if AndroidCAStore fails
+        TrustManagerFactory
+            .getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            .apply { init(null as KeyStore?) }
             .trustManagers
     }

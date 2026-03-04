@@ -7,6 +7,10 @@
         <trust-anchors>
             <!-- Trust pre-installed CAs -->
             <certificates src="system" />
+            <!-- Trust user-installed CAs for self-hosted servers -->
+            <certificates
+                src="user"
+                tools:ignore="AcceptsUserCertificates" />
         </trust-anchors>
     </base-config>
 
