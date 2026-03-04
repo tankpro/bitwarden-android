@@ -3,12 +3,8 @@
 
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
-            <!-- Trust pre-installed CAs -->
+            <!-- Trust only pre-installed CAs by default -->
             <certificates src="system" />
-            <!-- Additionally trust user added CAs -->
-            <certificates
-                src="user"
-                tools:ignore="AcceptsUserCertificates" />
         </trust-anchors>
     </base-config>
 
@@ -29,8 +25,21 @@
         <domain includeSubdomains="true">bitwarden.eu</domain>
         <domain includeSubdomains="true">bitwarden.pw</domain>
         <trust-anchors>
-            <!-- Only trust pre-installed CAs for Bitwarden domains and all subdomains -->
+            <!-- Only trust pre-installed CAs for Bitwarden domains -->
             <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Trust user certificates only for specific IP address -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>192.168.2.3</domain>
+        <trust-anchors>
+            <!-- Trust pre-installed CAs -->
+            <certificates src="system" />
+            <!-- Additionally trust user added CAs -->
+            <certificates
+                src="user"
+                tools:ignore="AcceptsUserCertificates" />
         </trust-anchors>
     </domain-config>
 
