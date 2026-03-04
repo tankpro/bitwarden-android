@@ -1,6 +1,7 @@
 package com.bitwarden.network.util
 
 import okio.ByteString.Companion.decodeBase64
+import timber.log.Timber
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.nio.charset.Charset

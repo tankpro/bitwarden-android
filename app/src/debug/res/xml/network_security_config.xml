@@ -24,15 +24,4 @@
         </trust-anchors>
     </domain-config>
 
-    <!-- Trust user certificates for self-hosted server -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain>192.168.2.3</domain>
-        <trust-anchors>
-            <certificates src="system" />
-            <certificates
-                src="user"
-                tools:ignore="AcceptsUserCertificates" />
-        </trust-anchors>
-    </domain-config>
-
 </network-security-config>

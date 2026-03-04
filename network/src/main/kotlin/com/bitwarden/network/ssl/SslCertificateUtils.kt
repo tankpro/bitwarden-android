@@ -1,7 +1,9 @@
 package com.bitwarden.network.ssl
 
 import okhttp3.OkHttpClient
+import timber.log.Timber
 import java.security.KeyStore
+import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
@@ -62,11 +64,39 @@ private val sslTrustManagers: Array<TrustManager>
     get() = runCatching {
         // Try AndroidCAStore first (includes both system and user certificates)
         val keyStore = KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+
+        // Debug: Log all certificates in the keystore
+        val aliases = keyStore.aliases().toList()
+        Timber.d("=== SSL Trust Manager Debug ===")
+        Timber.d("Total certificates in AndroidCAStore: ${aliases.size}")
+
+        var systemCount = 0
+        var userCount = 0
+
+        aliases.forEach { alias ->
+            val cert = keyStore.getCertificate(alias) as? X509Certificate
+            cert?.let {
+                val isUserCert = alias.contains("user:", ignoreCase = true)
+                if (isUserCert) {
+                    userCount++
+                    Timber.d("USER CA: $alias")
+                    Timber.d("  Subject: ${it.subjectDN}")
+                    Timber.d("  Issuer: ${it.issuerDN}")
+                    Timber.d("  Valid from: ${it.notBefore} to ${it.notAfter}")
+                } else {
+                    systemCount++
+                }
+            }
+        }
+        Timber.d("System CAs: $systemCount, User CAs: $userCount")
+        Timber.d("================================")
+
         TrustManagerFactory
             .getInstance(TrustManagerFactory.getDefaultAlgorithm())
             .apply { init(keyStore) }
             .trustManagers
-    }.getOrElse {
+    }.getOrElse { error ->
+        Timber.e(error, "Failed to load AndroidCAStore, using default trust managers")
         // Fallback to default trust managers if AndroidCAStore fails
         TrustManagerFactory
             .getInstance(TrustManagerFactory.getDefaultAlgorithm())

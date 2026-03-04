@@ -34,17 +34,4 @@
         </trust-anchors>
     </domain-config>
 
-    <!-- Trust user certificates only for specific IP address -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain>192.168.2.3</domain>
-        <trust-anchors>
-            <!-- Trust pre-installed CAs -->
-            <certificates src="system" />
-            <!-- Additionally trust user added CAs -->
-            <certificates
-                src="user"
-                tools:ignore="AcceptsUserCertificates" />
-        </trust-anchors>
-    </domain-config>
-
 </network-security-config>
