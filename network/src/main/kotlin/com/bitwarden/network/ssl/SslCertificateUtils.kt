@@ -54,10 +54,16 @@ private fun CertificateProvider.createSslContext(
 /**
  * Creates default [TrustManager]s for verifying server certificates.
  *
- * Uses the system's default trust anchors (trusted CA certificates).
+ * Uses both system CA certificates and user-installed certificates.
+ * This allows the app to trust self-signed certificates installed by the user
+ * for testing purposes (e.g., with self-hosted Bitwarden servers).
  */
 private val sslTrustManagers: Array<TrustManager>
-    get() = TrustManagerFactory
-        .getInstance(TrustManagerFactory.getDefaultAlgorithm())
-        .apply { init(null as KeyStore?) }
-        .trustManagers
+    get() {
+        // Load AndroidCAStore which includes both system and user certificates
+        val keyStore = KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+        return TrustManagerFactory
+            .getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            .apply { init(keyStore) }
+            .trustManagers
+    }
