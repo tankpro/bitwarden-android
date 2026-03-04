@@ -1,24 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config xmlns:tools="http://schemas.android.com/tools">
 
-    <base-config cleartextTrafficPermitted="false">
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration">
         <trust-anchors>
-            <!-- Trust only pre-installed CAs by default -->
+            <!-- Trust pre-installed CAs -->
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-
-    <!-- A lot of TLS certificates point to http:// URLs for CRL and OCSP checking,
-    so we need to allow cleartext traffic on them -->
-    <domain-config cleartextTrafficPermitted="true">
-        <!-- CRL Distribution Servers -->
-        <domain includeSubdomains="true">c.lencr.org</domain>
-        <domain includeSubdomains="true">c.pki.goog</domain>
-
-        <!-- OCSP Responder Servers -->
-        <domain includeSubdomains="true">o.pki.goog</domain>
-        <domain includeSubdomains="true">ocsp.sectigo.com</domain>
-    </domain-config>
 
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">bitwarden.com</domain>
@@ -30,13 +20,11 @@
         </trust-anchors>
     </domain-config>
 
-    <!-- Trust user certificates only for specific IP address -->
+    <!-- Trust user certificates for self-hosted server -->
     <domain-config cleartextTrafficPermitted="true">
         <domain>192.168.2.3</domain>
         <trust-anchors>
-            <!-- Trust pre-installed CAs -->
             <certificates src="system" />
-            <!-- Additionally trust user added CAs -->
             <certificates
                 src="user"
                 tools:ignore="AcceptsUserCertificates" />
